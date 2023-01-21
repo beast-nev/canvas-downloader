@@ -85,6 +85,9 @@ def get_course_files():
 
 
 if __name__ == '__main__':
+    """_summary_
+    Follow the GitHub step-by-step before uncommenting these functions below
+    """
     # the line below will show you all of your course names
     print_course_names()
 
