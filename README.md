@@ -1,5 +1,5 @@
 # canvas-downloader
-Tool to download all course files from Canvas
+Tool to download all course files from WPI Canvas
 
 # Step by Step guide
 ## Follow this! Do not simply run the script! You will be sad if you do that!
