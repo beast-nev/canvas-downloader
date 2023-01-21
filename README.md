@@ -2,7 +2,7 @@
 Tool to download all course files from Canvas
 
 # Step by Step guide
-## Follow this! Do not simply run the scipt you will be sad if you do that
+## Follow this! Do not simply run the script! You will be sad if you do that!
 1. Go to Canvas to get your API token - `Account` -> `Settings` -> `Approved Integrations:` -> `New Access Token`. Generate one and **COPY IT DOWN**, once you generate it you cannot view it again, i.e you will need to repeat this step.
 2. You then need to take this token and in a command prompt type `curl https://canvas.wpi.edu/api/v1/users/self -H "Authorization: Bearer <your-token-here>"`. Within the response of this you will see your `id` which is your personal user id, save this for later as well. Example: `curl https://canvas.wpi.edu/api/v1/users/self -H "Authorization: Bearer 123456789"`. The token will be some long string not 123456789 like.
 3. Clone the repo.
