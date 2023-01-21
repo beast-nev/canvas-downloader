@@ -15,7 +15,7 @@ Tool to download all course files from WPI Canvas
 10. Once you add to the `removing_courses` list you need to run the `get_courses_to_download()` function and that will add to the list `courses_to_download`
 11. Run `get_course_files()` to get all of your course files
 
-# Warnings
+# Warnings / Caveats
 - I was lazy and did not account for file types **AT ALL**, meaning this will download videos, images, pdfs, pptx...every file type. This can make a 10mb folder -> many GB after downloading all of the material so make sure you have disk space.
 - Another issue with this is that I just make every file a pdf - which will have for example `.mov` files be `example.mov.pdf` while is obviously wrong so you will need to manually change all of them to the correct file type. This was not really an issue for me as most of my files were `.pdf`. *This does not corrupt the files*.
 - I was also lazy in the sense of just trying to download it all. I *do not* separate the files into their classes, maybe at some point that will be done.
