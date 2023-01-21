@@ -16,6 +16,7 @@ Tool to download all course files from Canvas
 
 # Warnings
 - I was lazy and did not account for file types **AT ALL**, meaning this will download videos, images, pdfs, pptx...every file type. This can make a 10mb folder -> many GB after downloading all of the material so make sure you have disk space
+- Another issue with this and my laziness is that I just make every file a pdf - which will have for example `.mov` files be `.pdf` while is obviously wrong so you will need to manually change all of them to the correct file type. This was not really an issue for me as most of my files were `.pdf`
 
 # Resources that helped me make this
 - I followed this guide and used these docs to build this tool
