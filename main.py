@@ -9,20 +9,21 @@ dotenv.load_dotenv(dotenv.find_dotenv())
 # in the TOKEN and USER_ID here.
 TOKEN = os.environ.get('API_TOKEN')
 BASEURL = 'https://wpi.instructure.com'  # WPI canvas API endpoint
-USER_ID = int(os.environ.get('USER_ID'))
 
 # initialize canvas api with the WPI endpoint and your account token
 canvas_api = canvasapi.Canvas(BASEURL, TOKEN)
 
+# get the user_id for api calls
+user_id = canvas_api.get_current_user()
+
 # initialize your user object with your user ID
-user = canvas_api.get_user(USER_ID)
+user = canvas_api.get_user(user_id)
 
 # get all of your courses
 courses = user.get_courses()
 
 # list of courses you want to download
 courses_to_download = []
-
 
 def print_course_names():
     """_summary_
