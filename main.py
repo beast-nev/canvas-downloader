@@ -2,7 +2,9 @@ import os
 import canvasapi
 import dotenv
 from time import sleep
-from reactpy import component, html, run
+import logging as log
+
+log.basicConfig(format='%(levelname)s:%(message)s', level=log.WARNING)
 
 dotenv.load_dotenv(dotenv.find_dotenv())
 
@@ -10,6 +12,7 @@ dotenv.load_dotenv(dotenv.find_dotenv())
 # in the TOKEN and USER_ID here.
 TOKEN = os.environ.get('API_TOKEN')
 BASEURL = 'https://wpi.instructure.com'  # WPI canvas API endpoint
+ALLOWED_FILE_TYPES = ['pdf', 'pptx', 'docx']
 
 class API:
     def __init__(self, api: canvasapi.Canvas) -> None:
@@ -18,15 +21,16 @@ class API:
         self.courses = api.get_courses()
         self.removing_courses = []
         self.courses_to_download = []
-    def print_course_names(self):
+    
+    def log_course_names(self):
         """_summary_
         Print all of the courses withing the `courses` object above
         """
         for course in self.courses:
             try:
-                print(course.name)
-            except:
-                print('Could not print course name')
+                log.info(course.name)
+            except Exception as ex:
+                log.warning('Could not print course name', exc_info=ex)
 
     def get_courses_to_download(self):
         """_summary_
@@ -34,60 +38,43 @@ class API:
         """
         for course in self.courses:
             try:
-                if course.name not in self.removing_courses:
+                if course.name not in self.removing_courses and course.name == 'Data Analytics And Statistical Learning':
                     self.courses_to_download.append(course)
             except:
-                print('Could not add course to list')
-
+                log.info('Could did not have "name" attribute, trying "display_name"')
+                try:
+                    if course.display_name not in self.removing_courses and course.name == 'Data Analytics And Statistical Learning':
+                        self.courses_to_download.append(course)
+                except:
+                    log.warning(f'Could not add course to download list. Course has no code or name.')
+    
     def get_course_files(self):
         """_summary_
-        Download all of the courses into the 'data' directory
+        Download all of the courses into a 'data' directory, will be in the same directory as this script.
         """
-        course_bad_counter = 0  # some courses are odd and did not work properly, this will tell you how many you had. I had 5
         for course in self.courses_to_download:
             try:
-                print(f'Course name: {course.name}')
+                log.warning(f'Trying to download files for: {course.name}')
                 try:
                     files = course.get_files()
                     for file in files:
                         try:
-                            print(f'Downloading {str(file)}')
-                            # you can change the directory name from 'data' to whatever you want
-                            file.download(f'data/{str(file)}.pdf')
+                            file_type = file.display_name.split('.')[1]
+                            if file_type in ALLOWED_FILE_TYPES:
+                                log.info(f'Downloading {str(file)}')
+                                file.download(f'data/{str(file)}')
                         except:
-                            print(f'Failed downloading {str(file)}')
+                            log.warning(f'Failed downloading {str(file)}')
                 except:
-                    print(f'Failed downloading some files for {course.name}')
+                    log.info(f'Failed downloading some files.')
             except:
-                course_bad_counter += 1
-                print(
-                    f'Could not print/download course information for {course_bad_counter} courses')
-            sleep(0.5)
-        print(f'{course_bad_counter} courses could not be downloaded')
-
-
-@component
-def App():
-    return html.h1(
-        "Hi there!"
-    )
-run(App)
-
-
+                log.info(f'Could not download any course information.')
+            sleep(0.2) # some time b/n request
 if __name__ == '__main__':
-    """_summary_
-    Follow the GitHub step-by-step before uncommenting these functions below
-    """
-    # initialize canvas api with the WPI endpoint and your account token
     canvas_api = canvasapi.Canvas(BASEURL, TOKEN)
 
     api = API(canvas_api)
 
-    # the line below will show you all of your course names
-    run(App)
+    api.get_courses_to_download()
 
-    # uncomment the line below to add all of your desired courses to the `courses_to_download` list
-    # get_courses_to_download()
-
-    # uncomment the following line to begin downloading courses
-    # get_course_files()
+    api.get_course_files()
