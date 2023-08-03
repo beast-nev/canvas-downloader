@@ -4,77 +4,87 @@ import dotenv
 from time import sleep
 import logging as log
 
-log.basicConfig(format='%(levelname)s:%(message)s', level=log.WARNING)
+logger = log.getLogger(__name__)
+hdlr = log.StreamHandler()
+logger.addHandler(hdlr)
+logger.level = log.INFO
+LOG_TYPE_ERROR = 'Could not access course. Course has no code or name.'
 
 dotenv.load_dotenv(dotenv.find_dotenv())
 
-# TOKEN is in the .env file. If you don't publish any of this anywhere then you don't need .env file and can just write
-# in the TOKEN and USER_ID here.
 TOKEN = os.environ.get('API_TOKEN')
-BASEURL = 'https://wpi.instructure.com'  # WPI canvas API endpoint
-ALLOWED_FILE_TYPES = ['pdf', 'pptx', 'docx']
+BASEURL = 'https://wpi.instructure.com'  # WPI canvas API endpoint, change to your school if applicable
+ALLOWED_FILE_TYPES = ['pdf', 'pptx', 'docx'] # edit this list to whatever you want
+OUTPUT_DIR = 'data' # edit this to whatever you want
 
-class API:
+class Downloader:
     def __init__(self, api: canvasapi.Canvas) -> None:
         self.user_id = api.get_current_user()
         self.user = api.get_user(self.user_id)
-        self.courses = api.get_courses()
+        self.courses = list(api.get_courses())
         self.removing_courses = []
         self.courses_to_download = []
     
-    def log_course_names(self):
+    def remove_bad_courses(self):
         """_summary_
-        Print all of the courses withing the `courses` object above
+        Print all of the courses withing the courses object above.
         """
         for course in self.courses:
             try:
-                log.info(course.name)
-            except Exception as ex:
-                log.warning('Could not print course name', exc_info=ex)
-
-    def get_courses_to_download(self):
-        """_summary_
-        Get all of the courses to download by only adding the ones not specified in the `removing_courses` list
-        """
-        for course in self.courses:
-            try:
-                if course.name not in self.removing_courses and course.name == 'Data Analytics And Statistical Learning':
-                    self.courses_to_download.append(course)
+                logger.info(f'Found good course: {course.name}, code: {course.course_code}')
             except:
-                log.info('Could did not have "name" attribute, trying "display_name"')
-                try:
-                    if course.display_name not in self.removing_courses and course.name == 'Data Analytics And Statistical Learning':
-                        self.courses_to_download.append(course)
-                except:
-                    log.warning(f'Could not add course to download list. Course has no code or name.')
+                logger.info(f'Removing bad course.')
+                self.courses.remove(course)
     
+    def download_course(self, course):
+        """_summary_
+        Download a course's files to the output directory. Will create a subdirectory with the course name.
+        """
+        try:
+            logger.info(f'Trying to download files for: {course.name}')
+            files = course.get_files()
+            os.mkdir(f'{OUTPUT_DIR}/{course.name}')
+            for file in files:
+                try:
+                    file_type = file.display_name.split('.')[1]
+                    if file_type in ALLOWED_FILE_TYPES:
+                        logger.info(f'Downloading {str(file)}')
+                        file.download(f'{OUTPUT_DIR}/{course.name}/{str(file)}')
+                except:
+                    logger.warning(f'Failed downloading {str(file)}')
+        except:
+            logger.warning(LOG_TYPE_ERROR)
+
     def get_course_files(self):
         """_summary_
-        Download all of the courses into a 'data' directory, will be in the same directory as this script.
+        Download all of the courses into a output directory, will be in the same directory as this script.
         """
         for course in self.courses_to_download:
-            try:
-                log.warning(f'Trying to download files for: {course.name}')
-                try:
-                    files = course.get_files()
-                    for file in files:
-                        try:
-                            file_type = file.display_name.split('.')[1]
-                            if file_type in ALLOWED_FILE_TYPES:
-                                log.info(f'Downloading {str(file)}')
-                                file.download(f'data/{str(file)}')
-                        except:
-                            log.warning(f'Failed downloading {str(file)}')
-                except:
-                    log.info(f'Failed downloading some files.')
-            except:
-                log.info(f'Could not download any course information.')
+            self.download_course(course)
             sleep(0.2) # some time b/n request
+
 if __name__ == '__main__':
     canvas_api = canvasapi.Canvas(BASEURL, TOKEN)
 
-    api = API(canvas_api)
+    downloader = Downloader(canvas_api)
 
-    api.get_courses_to_download()
+    downloader.remove_bad_courses()
 
-    api.get_course_files()
+    for course in downloader.courses:
+        print(course.name)
+        print('Download course? Yes:1, No:0')
+        choice = int(input())
+        if choice == 1:
+            downloader.courses_to_download.append(course)
+        elif choice != 0:
+            log.error('Please enter only 1 for Yes and 0 for No.')
+            exit()
+
+    print('You choose the following courses to download:')
+    print([x.name for x in downloader.courses_to_download])
+    print('Starting download now...')
+    try:
+        os.mkdir(OUTPUT_DIR)
+    except Exception as ex:
+        logger.critical(f'Could not create directory: {OUTPUT_DIR}', ex)
+    downloader.get_course_files()
